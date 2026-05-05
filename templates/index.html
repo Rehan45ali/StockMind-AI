@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ app_name }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js" defer></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-block">
+        <div class="brand-kicker">REAL MARKET TERMINAL</div>
+        <div class="brand-row">
+          <h1>{{ app_name }}</h1>
+          <span class="status-chip" id="feed-mode-chip">Waiting for feed</span>
+        </div>
+        <p class="brand-copy" id="connection-copy">Live Indian market pulse, watchlists, portfolio depth, and execution flow in one screen.</p>
+        <div class="auth-toolbar" id="auth-toolbar" hidden>
+          <button class="secondary-button" id="disconnect-upstox-btn" type="button" hidden>Disconnect</button>
+        </div>
+        <p class="auth-copy" id="auth-copy">Market data can run in read-only mode, but API orders need a full trading token and a registered static IP.</p>
+      </div>
+
+      <div class="topbar-actions">
+        <div class="connection-panel">
+          <div class="connection-meta connection-meta-hero">
+            <div class="meta-label">Market status</div>
+            <div class="meta-value" id="market-status-label">Unavailable</div>
+            <div class="meta-copy" id="feed-health-copy">Waiting for a live market snapshot.</div>
+          </div>
+          <div class="connection-meta">
+            <div class="meta-label">Last sync</div>
+            <div class="meta-value" id="sync-stamp">Not started</div>
+          </div>
+          <div class="connection-meta">
+            <div class="meta-label">Feed profile</div>
+            <div class="meta-value" id="feed-profile-label">Waiting</div>
+          </div>
+          <div class="connection-meta">
+            <div class="meta-label">Tracking</div>
+            <div class="meta-value" id="watchlist-count-label">0 symbols</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="summary-band">
+        <form class="search-bar" id="search-form">
+          <label class="search-label" for="symbol-search">Add watchlist symbol</label>
+          <div class="search-row">
+            <input id="symbol-search" type="text" autocomplete="off" placeholder="Type RELIANCE, TCS, INFY...">
+            <button type="submit" class="secondary-button">Search</button>
+          </div>
+          <div class="search-results" id="search-results"></div>
+        </form>
+
+        <div class="stats-grid">
+          <article class="stat-panel">
+            <div class="stat-label">Selected symbol</div>
+            <div class="stat-value" id="selected-symbol">--</div>
+            <div class="stat-foot" id="selected-symbol-note">Choose a symbol from the watchlist.</div>
+          </article>
+          <article class="stat-panel">
+            <div class="stat-label">Available margin</div>
+            <div class="stat-value" id="available-margin">--</div>
+            <div class="stat-foot" id="used-margin-note">Visible when broker account data is available.</div>
+          </article>
+          <article class="stat-panel">
+            <div class="stat-label">Holdings P&amp;L</div>
+            <div class="stat-value" id="holdings-pnl">--</div>
+            <div class="stat-foot" id="holdings-value-note">Portfolio value stream appears here.</div>
+          </article>
+          <article class="stat-panel">
+            <div class="stat-label">Orders today</div>
+            <div class="stat-value" id="orders-count">--</div>
+            <div class="stat-foot" id="orders-note">Synced from the active trading session.</div>
+          </article>
+        </div>
+      </section>
+
+      <section class="intel-grid">
+        <section class="news-panel panel-surface">
+          <div class="section-heading">
+            <div>
+              <div class="eyebrow">Economics news</div>
+              <h2>Live macro headlines</h2>
+            </div>
+            <button class="secondary-button slim-button" id="refresh-news-btn" type="button">Refresh</button>
+          </div>
+          <p class="section-copy" id="news-copy">Streaming the latest economy and market-moving headlines.</p>
+          <div class="news-list" id="news-list"></div>
+        </section>
+
+        <section class="wallet-panel panel-surface">
+          <div class="section-heading">
+            <div>
+              <div class="eyebrow">Demo account</div>
+              <h2>Wallet and paper trading</h2>
+            </div>
+          </div>
+          <p class="section-copy" id="demo-copy">Log in to the demo account to place paper trades without touching the live broker session.</p>
+
+          <form class="demo-login-form" id="demo-login-form">
+            <label>
+              <span>Username</span>
+              <input id="demo-username" type="text" autocomplete="username" placeholder="demo@stockmind.ai">
+            </label>
+            <label>
+              <span>Password</span>
+              <input id="demo-password" type="password" autocomplete="current-password" placeholder="Enter demo password">
+            </label>
+            <button class="primary-button" id="demo-login-btn" type="submit">Demo login</button>
+            <button class="secondary-button" id="demo-logout-btn" type="button" hidden>Logout</button>
+          </form>
+
+          <div class="wallet-grid">
+            <article class="wallet-card">
+              <div class="stat-label">Cash balance</div>
+              <div class="wallet-value" id="wallet-cash">--</div>
+            </article>
+            <article class="wallet-card">
+              <div class="stat-label">Invested value</div>
+              <div class="wallet-value" id="wallet-invested">--</div>
+            </article>
+            <article class="wallet-card">
+              <div class="stat-label">Total equity</div>
+              <div class="wallet-value" id="wallet-equity">--</div>
+            </article>
+            <article class="wallet-card">
+              <div class="stat-label">Realized P&amp;L</div>
+              <div class="wallet-value" id="wallet-realized">--</div>
+            </article>
+          </div>
+
+          <div class="wallet-activity">
+            <div class="mini-heading">Recent demo activity</div>
+            <div class="activity-list" id="wallet-activity"></div>
+          </div>
+        </section>
+      </section>
+
+      <section class="market-grid">
+        <aside class="watchlist-panel panel-surface">
+          <div class="section-heading">
+            <div>
+              <div class="eyebrow">Watchlist</div>
+              <h2>Live equities</h2>
+            </div>
+          </div>
+          <div class="watchlist-scroll" id="watchlist-list"></div>
+        </aside>
+
+        <section class="chart-panel panel-surface">
+          <div class="section-heading">
+            <div>
+              <div class="eyebrow">Instrument view</div>
+              <h2 id="detail-title">Select a symbol</h2>
+            </div>
+            <div class="timeframe-group" id="timeframe-group">
+              <button class="timeframe-button active" data-tf="1D" type="button">1D</button>
+              <button class="timeframe-button" data-tf="1W" type="button">1W</button>
+              <button class="timeframe-button" data-tf="1M" type="button">1M</button>
+              <button class="timeframe-button" data-tf="1Y" type="button">1Y</button>
+            </div>
+          </div>
+
+          <div class="quote-strip">
+            <div class="quote-block">
+              <div class="quote-price" id="detail-price">--</div>
+              <div class="quote-change" id="detail-change">Waiting for data</div>
+            </div>
+            <div class="quote-points">
+              <div><span>Open</span><strong id="detail-open">--</strong></div>
+              <div><span>High</span><strong id="detail-high">--</strong></div>
+              <div><span>Low</span><strong id="detail-low">--</strong></div>
+              <div><span>Volume</span><strong id="detail-volume">--</strong></div>
+            </div>
+          </div>
+
+          <div class="chart-wrap">
+            <canvas id="price-chart"></canvas>
+          </div>
+        </section>
+
+        <aside class="insight-panel panel-surface">
+          <div class="section-heading">
+            <div>
+              <div class="eyebrow">Signal model</div>
+              <h2 id="signal-label">No symbol selected</h2>
+            </div>
+            <div class="bias-badge" id="signal-badge">--</div>
+          </div>
+
+          <div class="signal-meter">
+            <div class="meter-head">
+              <span>Bias score</span>
+              <strong id="bias-score">0</strong>
+            </div>
+            <div class="meter-track">
+              <div class="meter-fill" id="bias-fill"></div>
+            </div>
+          </div>
+
+          <div class="metric-grid">
+            <div class="metric-row"><span>RSI</span><strong id="metric-rsi">--</strong></div>
+            <div class="metric-row"><span>MA20</span><strong id="metric-ma20">--</strong></div>
+            <div class="metric-row"><span>MA50</span><strong id="metric-ma50">--</strong></div>
+            <div class="metric-row"><span>20D momentum</span><strong id="metric-momentum">--</strong></div>
+            <div class="metric-row"><span>20D volatility</span><strong id="metric-volatility">--</strong></div>
+            <div class="metric-row"><span>Support / Resistance</span><strong id="metric-range">--</strong></div>
+          </div>
+
+          <p class="signal-copy" id="signal-summary">Select a symbol to load live history and the model view.</p>
+
+          <form class="order-form" id="order-form">
+            <div class="section-heading compact-heading">
+              <div>
+                <div class="eyebrow">Execution</div>
+                <h2>Order ticket</h2>
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <label>
+                <span>Symbol</span>
+                <input id="order-symbol" type="text" placeholder="RELIANCE">
+              </label>
+              <label>
+                <span>Quantity</span>
+                <input id="order-qty" type="number" min="1" value="1">
+              </label>
+              <label>
+                <span>Side</span>
+                <select id="order-side">
+                  <option value="BUY">Buy</option>
+                  <option value="SELL">Sell</option>
+                </select>
+              </label>
+              <label>
+                <span>Product</span>
+                <select id="order-product">
+                  <option value="D">Delivery</option>
+                  <option value="I">Intraday</option>
+                  <option value="MTF">MTF</option>
+                </select>
+              </label>
+              <label>
+                <span>Order type</span>
+                <select id="order-type">
+                  <option value="MARKET">Market</option>
+                  <option value="LIMIT">Limit</option>
+                </select>
+              </label>
+              <label>
+                <span>Limit price</span>
+                <input id="order-price" type="number" min="0" step="0.05" placeholder="0.00" disabled>
+              </label>
+            </div>
+
+            <button class="primary-button full-width" id="place-order-btn" type="submit">Submit order</button>
+            <p class="form-note" id="order-note">API orders need a full trading token and must originate from your registered static IP.</p>
+          </form>
+        </aside>
+      </section>
+
+      <section class="indices-band panel-surface">
+        <div class="section-heading">
+          <div>
+            <div class="eyebrow">Pulse</div>
+            <h2>Major indices</h2>
+          </div>
+        </div>
+        <div class="indices-grid" id="indices-grid"></div>
+      </section>
+
+      <section class="account-grid">
+        <section class="table-panel panel-surface">
+          <div class="section-heading">
+            <div>
+              <div class="eyebrow">Portfolio</div>
+              <h2>Holdings</h2>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Symbol</th>
+                  <th>Qty</th>
+                  <th>Average</th>
+                  <th>LTP</th>
+                  <th>Value</th>
+                  <th>P&amp;L</th>
+                </tr>
+              </thead>
+              <tbody id="holdings-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="table-panel panel-surface">
+          <div class="section-heading">
+            <div>
+              <div class="eyebrow">Exposure</div>
+              <h2>Positions</h2>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Symbol</th>
+                  <th>Product</th>
+                  <th>Qty</th>
+                  <th>Average</th>
+                  <th>LTP</th>
+                  <th>P&amp;L</th>
+                </tr>
+              </thead>
+              <tbody id="positions-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="table-panel panel-surface full-span">
+          <div class="section-heading">
+            <div>
+              <div class="eyebrow">Execution log</div>
+              <h2>Orders today</h2>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Symbol</th>
+                  <th>Side</th>
+                  <th>Type</th>
+                  <th>Qty</th>
+                  <th>Status</th>
+                  <th>Average</th>
+                </tr>
+              </thead>
+              <tbody id="orders-body"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</body>
+</html>

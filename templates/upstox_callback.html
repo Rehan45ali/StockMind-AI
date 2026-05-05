@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upstox Callback</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Arial, sans-serif;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #f5f6f1;
+      color: #162019;
+    }
+    .card {
+      width: min(420px, calc(100vw - 32px));
+      padding: 28px;
+      border-radius: 18px;
+      background: #ffffff;
+      box-shadow: 0 22px 80px rgba(30, 54, 36, 0.12);
+      border: 1px solid #dce3d6;
+    }
+    h1 {
+      margin: 0 0 12px;
+      font-size: 22px;
+    }
+    p {
+      margin: 0;
+      line-height: 1.6;
+      color: #566157;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>{{ "Upstox connected" if success else "Upstox connection failed" }}</h1>
+    <p>{{ message }}</p>
+  </div>
+
+  <script>
+    (function () {
+      const payload = {
+        type: "upstox-auth",
+        success: {{ "true" if success else "false" }},
+        message: {{ message|tojson }}
+      };
+      if (window.opener) {
+        window.opener.postMessage(payload, "*");
+        window.setTimeout(() => window.close(), 600);
+      }
+    }());
+  </script>
+</body>
+</html>
