@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import secrets
+import tempfile
 from datetime import datetime, time, timedelta
 from threading import Lock
 from urllib.parse import urlencode
@@ -15,7 +16,7 @@ from models.timezone_utils import IST
 
 API_BASE_V2 = "https://api.upstox.com/v2"
 API_BASE_V3 = "https://api-hft.upstox.com/v3"
-WORKDIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+WORKDIR = tempfile.gettempdir() if os.getenv("VERCEL") else os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 TOKEN_PATH = os.path.join(WORKDIR, TOKENS["full_token_file"])
 INSTRUMENT_CACHE_PATH = os.path.join(WORKDIR, TOKENS["instrument_cache_file"])
 
@@ -153,10 +154,15 @@ def _full_access_token() -> str | None:
 
 
 def configured_for_login() -> bool:
-    return bool(UPSTOX["client_id"].strip() and UPSTOX["client_secret"].strip() and UPSTOX["redirect_uri"].strip())
+    return bool(UPSTOX["client_id"].strip() and UPSTOX["client_secret"].strip())
 
 
-def get_connection_status() -> dict:
+def _resolve_redirect_uri(redirect_uri: str | None = None) -> str:
+    value = (redirect_uri or UPSTOX["redirect_uri"] or "").strip()
+    return value
+
+
+def get_connection_status(redirect_uri: str | None = None) -> dict:
     full = _load_full_token()
     analytics = UPSTOX["analytics_token"].strip()
     has_full = bool(full and full.get("access_token"))
@@ -178,7 +184,7 @@ def get_connection_status() -> dict:
         "read_only_connected": bool(analytics) and not has_full,
         "any_connected": has_any,
         "auth_mode": mode,
-        "redirect_uri": UPSTOX["redirect_uri"],
+        "redirect_uri": _resolve_redirect_uri(redirect_uri),
         "user": {
             "user_id": full.get("user_id", ""),
             "user_name": full.get("user_name", ""),
@@ -188,13 +194,16 @@ def get_connection_status() -> dict:
     }
 
 
-def build_login_url(state: str) -> str:
+def build_login_url(state: str, redirect_uri: str | None = None) -> str:
     if not configured_for_login():
-        raise UpstoxError("Fill UPSTOX_CLIENT_ID, UPSTOX_CLIENT_SECRET, and UPSTOX_REDIRECT_URI first.")
+        raise UpstoxError("Fill UPSTOX_CLIENT_ID and UPSTOX_CLIENT_SECRET first.")
+    resolved_redirect_uri = _resolve_redirect_uri(redirect_uri)
+    if not resolved_redirect_uri:
+        raise UpstoxError("Set UPSTOX_REDIRECT_URI or provide the current callback URL.")
     query = urlencode(
         {
             "client_id": UPSTOX["client_id"].strip(),
-            "redirect_uri": UPSTOX["redirect_uri"].strip(),
+            "redirect_uri": resolved_redirect_uri,
             "response_type": "code",
             "state": state,
         }
@@ -206,9 +215,12 @@ def new_oauth_state() -> str:
     return secrets.token_urlsafe(24)
 
 
-def exchange_code_for_token(code: str) -> dict:
+def exchange_code_for_token(code: str, redirect_uri: str | None = None) -> dict:
     if not configured_for_login():
         raise UpstoxError("Upstox OAuth is not configured yet.")
+    resolved_redirect_uri = _resolve_redirect_uri(redirect_uri)
+    if not resolved_redirect_uri:
+        raise UpstoxError("Set UPSTOX_REDIRECT_URI or provide the current callback URL.")
     response = _session.post(
         f"{API_BASE_V2}/login/authorization/token",
         headers={
@@ -219,7 +231,7 @@ def exchange_code_for_token(code: str) -> dict:
             "code": code,
             "client_id": UPSTOX["client_id"].strip(),
             "client_secret": UPSTOX["client_secret"].strip(),
-            "redirect_uri": UPSTOX["redirect_uri"].strip(),
+            "redirect_uri": resolved_redirect_uri,
             "grant_type": "authorization_code",
         },
         timeout=UPSTOX["request_timeout"],

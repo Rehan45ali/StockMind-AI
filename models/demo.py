@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import tempfile
 import uuid
 from datetime import datetime
 from threading import Lock
@@ -11,6 +12,8 @@ from models.timezone_utils import IST
 from models.upstox import UpstoxError, get_quotes_map
 
 WORKDIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if os.getenv("VERCEL"):
+    WORKDIR = tempfile.gettempdir()
 DEMO_PATH = os.path.join(WORKDIR, TOKENS["demo_account_file"])
 _LOCK = Lock()
 

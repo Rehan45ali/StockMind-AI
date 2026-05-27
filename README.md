@@ -55,6 +55,22 @@ python app.py
 http://localhost:5000
 ```
 
+## Vercel deploy
+
+This repo is configured for Vercel with the Python function entrypoint in `api/index.py` and routes in `vercel.json`.
+
+Set these environment variables in Vercel before using full Upstox login:
+
+- `UPSTOX_CLIENT_ID`
+- `UPSTOX_CLIENT_SECRET`
+- `UPSTOX_ANALYTICS_TOKEN` if you want read-only live market data without OAuth
+
+Register this callback URL in the Upstox app settings for the deployed site:
+
+`https://<your-vercel-domain>/upstox/callback`
+
+The app uses a writable temp directory on Vercel for token and demo-state files, so it can run in the serverless runtime.
+
 ## Key routes
 
 - `GET /api/market/snapshot`

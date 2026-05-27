@@ -13,6 +13,10 @@ from models.upstox import (
 upstox_bp = Blueprint("upstox", __name__)
 
 
+def _callback_redirect_uri() -> str:
+    return request.url_root.rstrip("/") + "/upstox/callback"
+
+
 def handle_callback():
     returned_state = request.args.get("state", "")
     expected_state = session.pop("upstox_oauth_state", "")
@@ -32,7 +36,7 @@ def handle_callback():
         )
 
     try:
-        payload = exchange_code_for_token(code)
+        payload = exchange_code_for_token(code, redirect_uri=_callback_redirect_uri())
         user_name = payload.get("user_name") or payload.get("user_id") or "your account"
         return render_template(
             "upstox_callback.html",
@@ -49,7 +53,7 @@ def handle_callback():
 
 @upstox_bp.get("/status")
 def status():
-    return jsonify({"ok": True, **get_connection_status()})
+    return jsonify({"ok": True, **get_connection_status(redirect_uri=_callback_redirect_uri())})
 
 
 @upstox_bp.get("/login-url")
@@ -57,7 +61,7 @@ def login_url():
     state = new_oauth_state()
     session["upstox_oauth_state"] = state
     try:
-        return jsonify({"ok": True, "url": build_login_url(state)})
+        return jsonify({"ok": True, "url": build_login_url(state, redirect_uri=_callback_redirect_uri())})
     except UpstoxError as exc:
         return jsonify({"ok": False, "error": str(exc)}), 400
 
