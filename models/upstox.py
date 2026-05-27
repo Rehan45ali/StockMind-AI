@@ -6,15 +6,13 @@ import secrets
 from datetime import datetime, time, timedelta
 from threading import Lock
 from urllib.parse import urlencode
-from zoneinfo import ZoneInfo
 
 import requests
 
 from config import DASHBOARD, TOKENS, UPSTOX
 from models.analytics import analyze_price_action
+from models.timezone_utils import IST
 
-
-IST = ZoneInfo("Asia/Kolkata")
 API_BASE_V2 = "https://api.upstox.com/v2"
 API_BASE_V3 = "https://api-hft.upstox.com/v3"
 WORKDIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))

@@ -5,13 +5,11 @@ import os
 import uuid
 from datetime import datetime
 from threading import Lock
-from zoneinfo import ZoneInfo
 
 from config import DEMO, TOKENS
+from models.timezone_utils import IST
 from models.upstox import UpstoxError, get_quotes_map
 
-
-IST = ZoneInfo("Asia/Kolkata")
 WORKDIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DEMO_PATH = os.path.join(WORKDIR, TOKENS["demo_account_file"])
 _LOCK = Lock()

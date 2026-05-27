@@ -353,5 +353,21 @@
     "freeze_quantity": 100000.0,
     "qty_multiplier": 1,
     "security_type": "NORMAL"
+  },
+  "NSE,BSE|EQ|ICICIPRULI": {
+    "name": "ICICI PRU LIFE INS CO LTD",
+    "segment": "NSE_EQ",
+    "exchange": "NSE",
+    "isin": "INE726G01019",
+    "instrument_key": "NSE_EQ|INE726G01019",
+    "exchange_token": "18652",
+    "trading_symbol": "ICICIPRULI",
+    "short_name": "ICICI Prudential Life Insurance",
+    "tick_size": 5.0,
+    "lot_size": 1,
+    "instrument_type": "EQ",
+    "freeze_quantity": 100000.0,
+    "qty_multiplier": 1,
+    "security_type": "NORMAL"
   }
 }

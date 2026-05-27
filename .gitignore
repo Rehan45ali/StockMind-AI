@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.upstox_token.json
+.stockmind_demo.json
+.env
+.env.*
